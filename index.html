@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR Code Generator (Standalone)</title>
+<title>QR Studio Universal</title>
+<!-- ใช้ Library มาตรฐาน สร้าง QR Code สแกนติด 100% -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
     --primary: #0f4c81;
@@ -16,60 +18,77 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
     padding: 20px;
   }
   .container {
-    max-width: 500px;
-    margin: 40px auto;
+    max-width: 520px;
+    margin: 20px auto;
     background: var(--card-bg);
-    padding: 24px;
+    padding: 28px;
     border-radius: 16px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     border: 1px solid var(--border);
   }
-  h2 { margin-top: 0; color: var(--primary); text-align: center; }
-  label { font-weight: 600; display: block; margin: 12px 0 6px; font-size: 0.9rem; }
+  h2 { margin-top: 0; color: var(--primary); text-align: center; font-size: 1.5rem; }
+  label { font-weight: 600; display: block; margin: 14px 0 6px; font-size: 0.92rem; }
   textarea {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid var(--border);
     border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
     resize: vertical;
   }
-  .row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .row { display: flex; gap: 12px; margin-bottom: 10px; }
   .col { flex: 1; }
-  input[type="color"] { width: 100%; height: 38px; border: none; cursor: pointer; }
+  input[type="color"] { width: 100%; height: 42px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; padding: 2px; }
   button {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
+    font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 10px;
+    margin-top: 12px;
+    transition: background 0.2s ease;
   }
   .btn-generate { background: var(--primary); color: white; }
+  .btn-generate:hover { background: var(--primary-dark); }
   .btn-download { background: #10b981; color: white; display: none; }
-  #canvas-container {
-    text-align: center;
-    margin-top: 20px;
-    min-height: 200px;
+  .btn-download:hover { background: #059669; }
+  #qr-result {
     display: flex;
     justify-content: center;
     align-items: center;
+    margin-top: 20px;
+    padding: 20px;
     background: #f8fafc;
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px dashed var(--border);
+    min-height: 270px;
+  }
+  #qr-result img, #qr-result canvas {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .tip-text {
+    font-size: 0.85rem;
+    color: #64748b;
+    text-align: center;
+    margin-top: 10px;
+    display: none;
   }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>สร้าง QR Code</h2>
+  <h2>สร้าง QR Code (PC & Mobile)</h2>
   
   <label for="qr-text">ข้อความ หรือ ลิงก์ (URL):</label>
   <textarea id="qr-text" rows="3" placeholder="วางลิงก์ เช่น https://google.com"></textarea>
@@ -87,155 +106,82 @@
 
   <button class="btn-generate" onclick="generateQR()">1. สร้าง QR Code</button>
   
-  <div id="canvas-container">
-    <canvas id="qr-canvas"></canvas>
+  <div id="qr-result">
+    <span style="color: #94a3b8;">QR Code จะแสดงตรงนี้</span>
   </div>
 
   <button id="dl-btn" class="btn-download" onclick="downloadQR()">2. ดาวน์โหลดรูปภาพ (PNG)</button>
+  <p id="tip" class="tip-text">* บน PC/โน้ตบุ๊ก ระบบจะบันทึกไฟล์ให้อัตโนมัติ (หรือกดคลิกขวาที่รูป > Save image as...)</p>
 </div>
 
 <script>
-// Pure Standalone Minimal QR Engine
-var QREngine = (function() {
-  function QRCode(typeNumber, errorCorrectionLevel) {
-    this.typeNumber = typeNumber;
-    this.errorCorrectionLevel = errorCorrectionLevel;
-    this.modules = null;
-    this.moduleCount = 0;
-    this.dataList = [];
-  }
-  QRCode.prototype = {
-    addData: function(data) { this.dataList.push(data); },
-    isDark: function(row, col) { return this.modules[row][col]; },
-    getModuleCount: function() { return this.moduleCount; },
-    make: function() {
-      var specs = [
-        [17, 7, 10], [21, 10, 16], [25, 15, 26], [29, 20, 36], [33, 26, 48],
-        [37, 36, 64], [41, 40, 72], [45, 48, 88], [49, 60, 110], [53, 72, 130]
-      ];
-      var text = this.dataList[0] || "";
-      var bytes = [];
-      for (var i = 0; i < text.length; i++) {
-        var code = text.charCodeAt(i);
-        if (code < 0x100) { bytes.push(code); }
-        else {
-          bytes.push(0xEF, 0xBF, 0xBD); // Fallback UTF-8
-        }
-      }
-      
-      var ver = 0;
-      for (var v = 0; v < specs.length; v++) {
-        if (bytes.length <= specs[v][2]) { ver = v; break; }
-      }
-      
-      this.moduleCount = specs[ver][0];
-      var size = this.moduleCount;
-      this.modules = new Array(size);
-      for (var r = 0; r < size; r++) {
-        this.modules[r] = new Array(size);
-        for (var c = 0; c < size; c++) this.modules[r][c] = false;
-      }
-      
-      // Draw Finders
-      this.drawFinder(0, 0);
-      this.drawFinder(size - 7, 0);
-      this.drawFinder(0, size - 7);
-      
-      // Pseudo data placement grid logic for basic offline rendering
-      var bitIdx = 0;
-      for (var row = 0; row < size; row++) {
-        for (var col = 0; col < size; col++) {
-          if (this.isReserved(row, col, size)) continue;
-          var bytePos = Math.floor(bitIdx / 8);
-          if (bytePos < bytes.length) {
-            var bit = (bytes[bytePos] >> (7 - (bitIdx % 8))) & 1;
-            this.modules[row][col] = (bit === 1);
-          } else {
-            this.modules[row][col] = ((row + col) % 2 === 0);
-          }
-          bitIdx++;
-        }
-      }
-    },
-    drawFinder: function(r, c) {
-      for (var row = -1; row <= 7; row++) {
-        for (var col = -1; col <= 7; col++) {
-          if (r + row < 0 || r + row >= this.moduleCount || c + col < 0 || c + col >= this.moduleCount) continue;
-          var isBorder = (row === 0 || row === 6 || col === 0 || col === 6);
-          var isCenter = (row >= 2 && row <= 4 && col >= 2 && col <= 4);
-          this.modules[r + row][c + col] = (isBorder || isCenter);
-        }
-      }
-    },
-    isReserved: function(r, c, size) {
-      if (r <= 7 && c <= 7) return true;
-      if (r <= 7 && c >= size - 8) return true;
-      if (r >= size - 8 && c <= 7) return true;
-      return false;
-    }
-  };
-  return QRCode;
-})();
-
 function generateQR() {
-  var text = document.getElementById("qr-text").value.trim();
+  const text = document.getElementById("qr-text").value.trim();
   if (!text) {
-    alert("กรุณาใส่ข้อความหรือลิงก์ก่อนครับ");
+    alert("กรุณากรอกข้อความหรือวางลิงก์ก่อนครับ");
     return;
   }
 
-  var darkColor = document.getElementById("color-dark").value;
-  var lightColor = document.getElementById("color-light").value;
+  const darkColor = document.getElementById("color-dark").value;
+  const lightColor = document.getElementById("color-light").value;
+  const container = document.getElementById("qr-result");
   
-  var qr = new QREngine(0, 0);
-  qr.addData(text);
-  qr.make();
+  container.innerHTML = ""; // ล้างค่าเดิม
 
-  var canvas = document.getElementById("qr-canvas");
-  var ctx = canvas.getContext("2d");
-  
-  var modules = qr.getModuleCount();
-  var cellSize = 8;
-  var margin = 16;
-  var canvasSize = (modules * cellSize) + (margin * 2);
+  // สร้าง QR Code ขนาดมาตรฐานความละเอียดสูง
+  new QRCode(container, {
+    text: text,
+    width: 260,
+    height: 260,
+    colorDark: darkColor,
+    colorLight: lightColor,
+    correctLevel: QRCode.CorrectLevel.H
+  });
 
-  canvas.width = canvasSize;
-  canvas.height = canvasSize;
-
-  // Background
-  ctx.fillStyle = lightColor;
-  ctx.fillRect(0, 0, canvasSize, canvasSize);
-
-  // Modules
-  ctx.fillStyle = darkColor;
-  for (var r = 0; r < modules; r++) {
-    for (var c = 0; c < modules; c++) {
-      if (qr.isDark(r, c)) {
-        ctx.fillRect(
-          margin + (c * cellSize),
-          margin + (r * cellSize),
-          cellSize,
-          cellSize
-        );
-      }
-    }
-  }
-
-  document.getElementById("dl-btn").style.display = "block";
+  setTimeout(() => {
+    document.getElementById("dl-btn").style.display = "block";
+    document.getElementById("tip").style.display = "block";
+  }, 100);
 }
 
 function downloadQR() {
-  var canvas = document.getElementById("qr-canvas");
-  
-  // ใช้ DataURL โดยตรงจาก Canvas (ไม่อิงไฟล์นอก)
-  var imageURI = canvas.toDataURL("image/png");
-  
-  var link = document.createElement("a");
-  link.download = "qrcode.png";
-  link.href = imageURI;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const container = document.getElementById("qr-result");
+  const img = container.querySelector("img");
+  const canvas = container.querySelector("canvas");
+
+  let imageSrc = "";
+
+  if (canvas) {
+    imageSrc = canvas.toDataURL("image/png");
+  } else if (img && img.src) {
+    imageSrc = img.src;
+  }
+
+  if (!imageSrc) {
+    alert("ไม่พบรูปภาพ กรุณากดสร้าง QR Code ใหม่");
+    return;
+  }
+
+  // ระบบตรวจจับอุปกรณ์และสั่งดาวน์โหลด
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  if (isIOS) {
+    // ระบบดาวน์โหลดสำหรับ iOS / iPad
+    const newWindow = window.open();
+    if (newWindow) {
+      newWindow.document.write(`<div style="text-align:center;padding:20px;"><img src="${imageSrc}" style="max-width:100%;"><p style="font-family:sans-serif;">แตะค้างที่รูปภาพเพื่อบันทึกรูปภาพ (Save Image)</p></div>`);
+    } else {
+      window.location.href = imageSrc;
+    }
+  } else {
+    // ระบบดาวน์โหลดมาตรฐานสำหรับ PC, โน้ตบุ๊ก (Windows/Mac) และ Android
+    const link = document.createElement("a");
+    link.href = imageSrc;
+    link.download = "qrcode.png";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }
 </script>
 
