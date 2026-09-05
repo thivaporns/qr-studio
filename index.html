@@ -83,7 +83,7 @@ input[type="color"] {
 .result-wrap { text-align: center; margin-top: 24px; display: none; }
 .result-wrap.show { display: block; }
 #qr-render { display: flex; justify-content: center; margin: 18px 0; }
-#qr-render canvas, #qr-render img {
+#qr-render canvas {
   border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: white;
 }
 .result-meta {
@@ -152,9 +152,9 @@ input[type="color"] {
     <div class="card">
       <h2>สร้าง QR จากลิงก์ไฟล์ (PDF / รูปภาพ / เอกสาร)</h2>
       <div class="note-box">
-        📌 เว็บนี้เป็นแบบ Static (โฮสต์บน GitHub Pages) จึง<strong>ไม่มีเซิร์ฟเวอร์เก็บไฟล์</strong>
-        ให้คุณอัปโหลดไฟล์ไปยังบริการอื่นก่อน เช่น Google Drive, Dropbox, GitHub เอง หรือเว็บฝากไฟล์ใดๆ
-        แล้วคัดลอก "ลิงก์แชร์" มาวางด้านล่างเพื่อสร้าง QR Code ที่ชี้ไปยังไฟล์นั้น
+        📌 เว็บนี้เป็นแบบ Static จึง<strong>ไม่มีเซิร์ฟเวอร์เก็บไฟล์</strong>
+        ให้คุณอัปโหลดไฟล์ไปยังบริการอื่นก่อน เช่น Google Drive, Dropbox หรือเว็บฝากไฟล์ใดๆ
+        แล้วคัดลอก "ลิงก์แชร์" มาวางด้านล่างเพื่อสร้าง QR Code
       </div>
 
       <label for="file_link">ลิงก์ไฟล์ (URL)</label>
@@ -234,70 +234,27 @@ function hideResult() {
   document.getElementById("result").classList.remove("show");
 }
 
-function renderQR(text, fillColor, backColor, size, withLogo) {
-  const container = document.getElementById("qr-render");
-  container.innerHTML = "";
-
-  const qrDiv = document.createElement("div");
-  container.appendChild(qrDiv);
-
-  new QRCode(qrDiv, {
-    text: text,
-    width: size,
-    height: size,
-    colorDark: fillColor,
-    colorLight: backColor,
-    correctLevel: QRCode.CorrectLevel.H
-  });
-
-  setTimeout(() => {
-    let canvas = qrDiv.querySelector("canvas");
-    const img = qrDiv.querySelector("img");
-
-    if (!canvas && img) {
-      canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext("2d");
-      const tempImg = new Image();
-      tempImg.onload = () => {
-        ctx.drawImage(tempImg, 0, 0, size, size);
-        if (withLogo && currentLogoDataUrl) {
-          drawLogoOnCanvas(ctx, size);
-        }
-      };
-      tempImg.src = img.src;
-      qrDiv.innerHTML = "";
-      qrDiv.appendChild(canvas);
-      return;
-    }
-
-    if (canvas) {
-      if (img) img.style.display = "none";
-      if (withLogo && currentLogoDataUrl) {
-        const ctx = canvas.getContext("2d");
-        drawLogoOnCanvas(ctx, size);
-      }
-    }
-  }, 100);
-}
-
-function drawLogoOnCanvas(ctx, size) {
+function drawCircularLogo(ctx, size, callback) {
+  if (!currentLogoDataUrl) {
+    if (callback) callback();
+    return;
+  }
   const logoImg = new Image();
   logoImg.onload = () => {
     const logoSize = size * 0.22;
     const pad = 6;
-    
     const centerX = size / 2;
     const centerY = size / 2;
     const logoRadius = logoSize / 2;
     const padRadius = logoRadius + pad;
 
+    // วาดวงกลมพื้นหลังสีขาว
     ctx.beginPath();
     ctx.arc(centerX, centerY, padRadius, 0, 2 * Math.PI);
     ctx.fillStyle = "#ffffff";
     ctx.fill();
 
+    // วาดโลโก้แบบตัดขอบวงกลม
     ctx.save();
     ctx.beginPath();
     ctx.arc(centerX, centerY, logoRadius, 0, 2 * Math.PI);
@@ -306,10 +263,61 @@ function drawLogoOnCanvas(ctx, size) {
     const x = centerX - logoRadius;
     const y = centerY - logoRadius;
     ctx.drawImage(logoImg, x, y, logoSize, logoSize);
-    
     ctx.restore();
+
+    if (callback) callback();
   };
   logoImg.src = currentLogoDataUrl;
+}
+
+function renderQR(text, fillColor, backColor, size, withLogo) {
+  const container = document.getElementById("qr-render");
+  container.innerHTML = "";
+
+  // สร้าง temp div สำหรับ qrcodejs
+  const tempDiv = document.createElement("div");
+  
+  new QRCode(tempDiv, {
+    text: text,
+    width: size,
+    height: size,
+    colorDark: fillColor,
+    colorLight: backColor,
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  // รอให้ qrcode.js เจนภาพเสร็จ
+  setTimeout(() => {
+    let sourceCanvas = tempDiv.querySelector("canvas");
+    let sourceImg = tempDiv.querySelector("img");
+
+    const finalCanvas = document.createElement("canvas");
+    finalCanvas.width = size;
+    finalCanvas.height = size;
+    const ctx = finalCanvas.getContext("2d");
+
+    const renderComplete = () => {
+      if (withLogo && currentLogoDataUrl) {
+        drawCircularLogo(ctx, size, () => {
+          container.appendChild(finalCanvas);
+        });
+      } else {
+        container.appendChild(finalCanvas);
+      }
+    };
+
+    if (sourceCanvas) {
+      ctx.drawImage(sourceCanvas, 0, 0);
+      renderComplete();
+    } else if (sourceImg) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        renderComplete();
+      };
+      img.src = sourceImg.src;
+    }
+  }, 150);
 }
 
 function generateTextQR() {
@@ -359,29 +367,24 @@ function generateFileQR() {
 }
 
 function downloadQR() {
-  const container = document.querySelector("#qr-render");
-  const canvas = container ? container.querySelector("canvas") : null;
-  const img = container ? container.querySelector("img") : null;
+  const canvas = document.querySelector("#qr-render canvas");
 
-  let dataUrl = "";
-
-  if (canvas) {
-    dataUrl = canvas.toDataURL("image/png");
-  } else if (img && img.src) {
-    dataUrl = img.src;
-  }
-
-  if (!dataUrl) {
+  if (!canvas) {
     showFlash("ไม่พบภาพ QR สำหรับดาวน์โหลด กรุณาสร้าง QR ใหม่อีกครั้ง");
     return;
   }
 
-  const link = document.createElement("a");
-  link.download = "qrcode.png";
-  link.href = dataUrl;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  try {
+    const dataUrl = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = "qrcode.png";
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    showFlash("เกิดข้อผิดพลาดในการดาวน์โหลดภาพ กรุณาลองใหม่อีกครั้ง");
+  }
 }
 
 function resetForm() {
