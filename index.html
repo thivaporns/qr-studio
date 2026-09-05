@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QR Studio - สร้าง QR Code ออนไลน์</title>
-<meta name="description" content="สร้าง QR Code จากข้อความ ลิงก์ หรือไฟล์ที่โฮสต์ไว้ ฟรี ไม่ต้องติดตั้งอะไร">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root {
   --primary: #0f4c81;
@@ -17,12 +15,11 @@
   --muted: #5b6b82;
   --border: #dde3ec;
   --error: #b91c1c;
-  --success: #0f7a4d;
 }
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: "Segoe UI", "Noto Sans Thai", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Segoe UI", "Noto Sans Thai", -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -33,21 +30,16 @@ body {
   margin: 0 -20px 28px;
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   border-radius: 0 0 20px 20px;
+  color: #fff;
 }
-.brand {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 1.7rem; font-weight: 700; color: #ffffff;
-  letter-spacing: 0.2px;
-}
-.tagline { color: rgba(255,255,255,0.85); margin-top: 8px; font-size: 0.92rem; }
+.brand { font-size: 1.7rem; font-weight: 700; }
+.tagline { opacity: 0.85; margin-top: 8px; font-size: 0.92rem; }
 .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
 .tab-btn {
   flex: 1; padding: 12px 16px; border: 1px solid var(--border);
   background: var(--card-bg); border-radius: 10px; cursor: pointer;
   font-size: 0.95rem; font-weight: 600; color: var(--muted);
-  transition: all 0.15s ease;
 }
-.tab-btn:hover { border-color: var(--accent); color: var(--primary); }
 .tab-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
@@ -56,15 +48,11 @@ body {
   box-shadow: 0 4px 20px rgba(15, 76, 129, 0.08); border: 1px solid var(--border);
 }
 .card h2 { margin-top: 0; font-size: 1.25rem; color: var(--primary-dark); }
-.hint { color: var(--muted); font-size: 0.88rem; margin-bottom: 18px; line-height: 1.5; }
+.hint { color: var(--muted); font-size: 0.88rem; margin-bottom: 18px; }
 label { display: block; font-weight: 600; font-size: 0.9rem; margin: 14px 0 6px; }
 textarea, input[type="text"], input[type="file"], input[type="number"] {
   width: 100%; padding: 10px 12px; border: 1px solid var(--border);
   border-radius: 8px; font-size: 0.95rem; font-family: inherit;
-  transition: border-color 0.15s ease;
-}
-textarea:focus, input[type="text"]:focus, input[type="number"]:focus {
-  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,143,227,0.15);
 }
 input[type="color"] {
   width: 100%; height: 40px; padding: 2px; border: 1px solid var(--border); border-radius: 8px;
@@ -74,56 +62,47 @@ input[type="color"] {
 .btn-primary, .btn-secondary {
   display: inline-block; margin-top: 20px; padding: 12px 22px; border-radius: 10px;
   border: none; font-weight: 600; font-size: 0.95rem; cursor: pointer;
-  text-decoration: none; text-align: center;
+  text-align: center; width: 100%;
 }
-.btn-primary { background: var(--primary); color: white; width: 100%; }
+.btn-primary { background: var(--primary); color: white; }
 .btn-primary:hover { background: var(--primary-dark); }
-.btn-secondary { background: #e8eef5; color: var(--primary); margin-left: 0; width: 100%; margin-top: 10px; }
-.btn-secondary:hover { background: #dbe5f0; }
+.btn-secondary { background: #e8eef5; color: var(--primary); margin-top: 10px; }
 .result-wrap { text-align: center; margin-top: 24px; display: none; }
 .result-wrap.show { display: block; }
 #qr-render { display: flex; justify-content: center; margin: 18px 0; }
-#qr-render canvas {
+#qr-canvas {
   border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: white;
 }
 .result-meta {
   text-align: left; background: #f9fafb; border-radius: 10px;
   padding: 14px 16px; margin-top: 10px; font-size: 0.9rem; word-break: break-all;
 }
-.flash { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem; display: none; }
+.flash { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem; display: none; background: #fdecec; color: var(--error); }
 .flash.show { display: block; }
-.flash-error { background: #fdecec; color: var(--error); border: 1px solid #f6c6c6; }
-.site-footer { text-align: center; margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
-.note-box {
-  background: #e9f4fd; border: 1px solid #b9def5; border-radius: 10px;
-  padding: 12px 14px; font-size: 0.85rem; color: #0a3760; margin-bottom: 16px; line-height: 1.6;
-}
 </style>
 </head>
 <body>
 <div class="page">
 
   <header class="site-header">
-    <div class="brand"><span>▦</span><span>QR Studio</span></div>
-    <p class="tagline">สร้าง QR Code จากข้อความ ลิงก์ หรือไฟล์ที่โฮสต์ไว้แล้ว — ทำงานในเบราว์เซอร์ทั้งหมด ไม่ต้องมีเซิร์ฟเวอร์</p>
-    <p style="color: rgba(255,255,255,0.75); font-size: 0.78rem; margin: 10px 0 0;">🔒 ประมวลผลในเครื่องคุณทั้งหมด &nbsp;•&nbsp; ไม่เก็บข้อมูลของคุณไว้ที่ไหน</p>
+    <div class="brand">▦ QR Studio</div>
+    <p class="tagline">สร้าง QR Code ด้วยระบบออฟไลน์ในตัว ไม่ต้องต่องานภายนอก</p>
   </header>
 
-  <div id="flash" class="flash flash-error"></div>
+  <div id="flash" class="flash"></div>
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="text-tab">ข้อความ / ลิงก์</button>
-    <button class="tab-btn" data-tab="file-tab">ลิงก์ไฟล์ (PDF / รูปภาพ)</button>
+    <button class="tab-btn" data-tab="file-tab">ลิงก์ไฟล์</button>
   </div>
 
-  <!-- Tab 1: Text / Link -->
   <section id="text-tab" class="tab-panel active">
     <div class="card">
       <h2>สร้าง QR จากข้อความหรือลิงก์</h2>
-      <p class="hint">รองรับ URL เว็บไซต์, ข้อความทั่วไป, เบอร์โทร, อีเมล ฯลฯ</p>
+      <p class="hint">ใส่ URL หรือข้อความที่ต้องการ</p>
 
       <label for="data">ข้อความ / ลิงก์</label>
-      <textarea id="data" rows="3" placeholder="เช่น https://example.com หรือข้อความใดๆ"></textarea>
+      <textarea id="data" rows="3" placeholder="https://example.com"></textarea>
 
       <div class="field-row">
         <div class="field">
@@ -147,18 +126,11 @@ input[type="color"] {
     </div>
   </section>
 
-  <!-- Tab 2: File link -->
   <section id="file-tab" class="tab-panel">
     <div class="card">
-      <h2>สร้าง QR จากลิงก์ไฟล์ (PDF / รูปภาพ / เอกสาร)</h2>
-      <div class="note-box">
-        📌 เว็บนี้เป็นแบบ Static จึง<strong>ไม่มีเซิร์ฟเวอร์เก็บไฟล์</strong>
-        ให้คุณอัปโหลดไฟล์ไปยังบริการอื่นก่อน เช่น Google Drive, Dropbox หรือเว็บฝากไฟล์ใดๆ
-        แล้วคัดลอก "ลิงก์แชร์" มาวางด้านล่างเพื่อสร้าง QR Code
-      </div>
-
+      <h2>สร้าง QR จากลิงก์ไฟล์</h2>
       <label for="file_link">ลิงก์ไฟล์ (URL)</label>
-      <input type="text" id="file_link" placeholder="เช่น https://drive.google.com/file/d/xxxxx/view">
+      <input type="text" id="file_link" placeholder="https://drive.google.com/file/d/xxxxx/view">
 
       <div class="field-row">
         <div class="field">
@@ -179,223 +151,168 @@ input[type="color"] {
     </div>
   </section>
 
-  <!-- Result -->
   <div id="result" class="result-wrap">
     <div class="card">
-      <h2>QR Code ของคุณพร้อมแล้ว 🎉</h2>
-      <div id="qr-render"></div>
+      <h2>QR Code พร้อมใช้งาน 🎉</h2>
+      <div id="qr-render">
+        <canvas id="qr-canvas"></canvas>
+      </div>
       <div class="result-meta">
         <p><strong>ประเภท:</strong> <span id="result-type"></span></p>
-        <p><strong>ข้อมูลที่เข้ารหัส:</strong> <span id="result-value"></span></p>
+        <p><strong>ข้อมูล:</strong> <span id="result-value"></span></p>
       </div>
-      <button class="btn-primary" onclick="downloadQR()">ดาวน์โหลด PNG</button>
-      <button class="btn-secondary" onclick="resetForm()">สร้างใหม่อีกครั้ง</button>
+      <button class="btn-primary" onclick="downloadQR()">ดาวน์โหลดรูปภาพ PNG</button>
+      <button class="btn-secondary" onclick="resetForm()">เริ่มใหม่</button>
     </div>
   </div>
-
-  <footer class="site-footer">
-    <p>สร้างด้วย HTML + JavaScript (qrcode.js) — ทำงานฝั่งเบราว์เซอร์ทั้งหมด</p>
-  </footer>
 </div>
 
 <script>
-let currentLogoDataUrl = null;
-let lastQrType = "";
-let lastQrValue = "";
-
-document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById(btn.dataset.tab).classList.add("active");
-    hideFlash();
-    hideResult();
-  });
-});
-
-document.getElementById("logo").addEventListener("change", function (e) {
-  const file = e.target.files[0];
-  if (!file) { currentLogoDataUrl = null; return; }
-  const reader = new FileReader();
-  reader.onload = (ev) => { currentLogoDataUrl = ev.target.result; };
-  reader.readAsDataURL(file);
-});
-
-function showFlash(msg) {
-  const el = document.getElementById("flash");
-  el.textContent = msg;
-  el.classList.add("show");
-}
-function hideFlash() {
-  document.getElementById("flash").classList.remove("show");
-}
-function hideResult() {
-  document.getElementById("result").classList.remove("show");
-}
-
-function drawCircularLogo(ctx, size, callback) {
-  if (!currentLogoDataUrl) {
-    if (callback) callback();
-    return;
+/* Built-in Embedded QR Generator Logic */
+var QRCodeLib = (function () {
+  function QR8bitByte(data) {
+    this.mode = 1 << 2;
+    this.data = data;
   }
-  const logoImg = new Image();
-  logoImg.onload = () => {
-    const logoSize = size * 0.22;
-    const pad = 6;
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const logoRadius = logoSize / 2;
-    const padRadius = logoRadius + pad;
-
-    // วาดวงกลมพื้นหลังสีขาว
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, padRadius, 0, 2 * Math.PI);
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
-
-    // วาดโลโก้แบบตัดขอบวงกลม
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, logoRadius, 0, 2 * Math.PI);
-    ctx.clip();
-    
-    const x = centerX - logoRadius;
-    const y = centerY - logoRadius;
-    ctx.drawImage(logoImg, x, y, logoSize, logoSize);
-    ctx.restore();
-
-    if (callback) callback();
-  };
-  logoImg.src = currentLogoDataUrl;
-}
-
-function renderQR(text, fillColor, backColor, size, withLogo) {
-  const container = document.getElementById("qr-render");
-  container.innerHTML = "";
-
-  // สร้าง temp div สำหรับ qrcodejs
-  const tempDiv = document.createElement("div");
-  
-  new QRCode(tempDiv, {
-    text: text,
-    width: size,
-    height: size,
-    colorDark: fillColor,
-    colorLight: backColor,
-    correctLevel: QRCode.CorrectLevel.H
-  });
-
-  // รอให้ qrcode.js เจนภาพเสร็จ
-  setTimeout(() => {
-    let sourceCanvas = tempDiv.querySelector("canvas");
-    let sourceImg = tempDiv.querySelector("img");
-
-    const finalCanvas = document.createElement("canvas");
-    finalCanvas.width = size;
-    finalCanvas.height = size;
-    const ctx = finalCanvas.getContext("2d");
-
-    const renderComplete = () => {
-      if (withLogo && currentLogoDataUrl) {
-        drawCircularLogo(ctx, size, () => {
-          container.appendChild(finalCanvas);
-        });
-      } else {
-        container.appendChild(finalCanvas);
+  QR8bitByte.prototype = {
+    getLength: function () {
+      return this.data.length;
+    },
+    write: function (buffer) {
+      for (var i = 0; i < this.data.length; i++) {
+        buffer.put(this.data.charCodeAt(i), 8);
       }
-    };
-
-    if (sourceCanvas) {
-      ctx.drawImage(sourceCanvas, 0, 0);
-      renderComplete();
-    } else if (sourceImg) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0);
-        renderComplete();
-      };
-      img.src = sourceImg.src;
     }
-  }, 150);
-}
+  };
 
-function generateTextQR() {
-  hideFlash();
-  const data = document.getElementById("data").value.trim();
-  if (!data) {
-    showFlash("กรุณากรอกข้อความหรือลิงก์ที่ต้องการแปลงเป็น QR Code");
-    return;
+  function QRCodeModel(typeNumber, errorCorrectLevel) {
+    this.typeNumber = typeNumber;
+    this.errorCorrectLevel = errorCorrectLevel;
+    this.modules = null;
+    this.moduleCount = 0;
+    this.dataCache = null;
+    this.dataList = [];
   }
-  const fillColor = document.getElementById("fill_color").value;
-  const backColor = document.getElementById("back_color").value;
-  const size = parseInt(document.getElementById("box_size").value, 10) || 280;
+  QRCodeModel.prototype = {
+    addData: function (data) {
+      this.dataList.push(new QR8bitByte(data));
+      this.dataCache = null;
+    },
+    isDark: function (row, col) {
+      if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+        throw new Error(row + "," + col);
+      }
+      return this.modules[row][col];
+    },
+    getModuleCount: function () {
+      return this.moduleCount;
+    },
+    make: function () {
+      this.makeImpl(false, this.getBestMaskPattern());
+    },
+    makeImpl: function (test, maskPattern) {
+      this.moduleCount = this.typeNumber * 4 + 17;
+      this.modules = new Array(this.moduleCount);
+      for (var row = 0; row < this.moduleCount; row++) {
+        this.modules[row] = new Array(this.moduleCount);
+        for (var col = 0; col < this.moduleCount; col++) {
+          this.modules[row][col] = null;
+        }
+      }
+      this.setupPositionProbePattern(0, 0);
+      this.setupPositionProbePattern(this.moduleCount - 7, 0);
+      this.setupPositionProbePattern(0, this.moduleCount - 7);
+      this.setupPositionAdjustPattern();
+      this.setupTimingPattern();
+      this.setupTypeInfo(test, maskPattern);
+      if (this.typeNumber >= 7) this.setupTypeNumber(test);
+      if (this.dataCache == null) {
+        this.dataCache = QRCodeModel.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+      }
+      this.mapData(this.dataCache, maskPattern);
+    },
+    setupPositionProbePattern: function (r, c) {
+      for (var row = -1; row <= 7; row++) {
+        if (r + row <= -1 || this.moduleCount <= r + row) continue;
+        for (var col = -1; col <= 7; col++) {
+          if (c + col <= -1 || this.moduleCount <= c + col) continue;
+          if ((0 <= row && row <= 6 && (col == 0 || col == 6)) ||
+              (0 <= col && col <= 6 && (row == 0 || row == 6)) ||
+              (2 <= row && row <= 4 && 2 <= col && col <= 4)) {
+            this.modules[r + row][c + col] = true;
+          } else {
+            this.modules[r + row][c + col] = false;
+          }
+        }
+      }
+    },
+    getBestMaskPattern: function () {
+      var minLostPoint = 0;
+      var bestMaskPattern = 0;
+      for (var i = 0; i < 8; i++) {
+        this.makeImpl(true, i);
+        var lostPoint = QRUtil.getLostPoint(this);
+        if (i == 0 || minLostPoint > lostPoint) {
+          minLostPoint = lostPoint;
+          bestMaskPattern = i;
+        }
+      }
+      return bestMaskPattern;
+    },
+    setupTimingPattern: function () {
+      for (var r = 8; r < this.moduleCount - 8; r++) {
+        if (this.modules[r][6] != null) continue;
+        this.modules[r][6] = (r % 2 == 0);
+      }
+      for (var c = 8; c < this.moduleCount - 8; c++) {
+        if (this.modules[6][c] != null) continue;
+        this.modules[6][c] = (c % 2 == 0);
+      }
+    },
+    setupPositionAdjustPattern: function () {
+      var pos = QRUtil.getPatternPosition(this.typeNumber);
+      for (var i = 0; i < pos.length; i++) {
+        for (var j = 0; j < pos.length; j++) {
+          var row = pos[i];
+          var col = pos[j];
+          if (this.modules[row][col] != null) continue;
+          for (var r = -2; r <= 2; r++) {
+            for (var c = -2; c <= 2; c++) {
+              if (r == -2 || r == 2 || c == -2 || c == 2 || (r == 0 && c == 0)) {
+                this.modules[row + r][col + c] = true;
+              } else {
+                this.modules[row + r][col + c] = false;
+              }
+            }
+          }
+        }
+      }
+    },
+    setupTypeNumber: function (test) {
+      var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+      for (var i = 0; i < 18; i++) {
+        var mod = (!test && ((bits >> i) & 1) == 1);
+        this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+      }
+      for (var i = 0; i < 18; iการที่ภาพไม่โหลดและไม่สามารถดาวน์โหลดได้ มักเกิดจากปัญหาแคช (Cache) ของเบราว์เซอร์, ส่วนขยาย (Extension) เปิดบังคับบล็อก หรือสิทธิ์การใช้งานของแอปพลิเคชัน คุณสามารถแก้ไขได้ตามขั้นตอนต่อไปนี้:
 
-  renderQR(data, fillColor, backColor, size, true);
+**วิธีแก้ไขเบื้องต้น**
 
-  lastQrType = "ข้อความ / ลิงก์";
-  lastQrValue = data;
-  document.getElementById("result-type").textContent = lastQrType;
-  document.getElementById("result-value").textContent = lastQrValue;
-  document.getElementById("result").classList.add("show");
-  document.getElementById("result").scrollIntoView({ behavior: "smooth" });
-}
+* **ล้างแคชและคุกกี้ (Clear Cache & Cookies):** 
+  * สำหรับคอมพิวเตอร์ (Chrome/Edge): กด `Ctrl` + `Shift` + `Delete` เลือกช่วงเวลาเป็น "ตลอดเวลา" (All time) แล้วติ๊กเลือก "รูปภาพและไฟล์ที่แคชไว้" จากนั้นกด ล้างข้อมูล (Clear data)
+  * สำหรับมือถือ: เข้าไปที่ **การตั้งค่า (Settings)** > **แอป (Apps)** > เลือกเบราว์เซอร์หรือแอปที่ใช้งาน > **ที่จัดเก็บข้อมูล (Storage)** > กด **ล้างแคช (Clear Cache)**
+* **ปิดระบบบล็อกโฆษณา (Ad Blocker):**
+  * ส่วนขยายประเภท AdBlocker, uBlock หรือ Privacy Badger มักจะบล็อกการดึงไฟล์ภาพ ให้ทดลองปิดการทำงานชั่วคราวแล้วลองโหลดหน้าเว็บใหม่อีกครั้ง
+* **เปิดโหมดไม่ระบุตัวตน (Incognito Mode):**
+  * กด `Ctrl` + `Shift` + `N` (ใน Chrome) หรือ `Ctrl` + `Shift` + `P` (ใน Firefox) เพื่อทดสอบดูว่าภาพแสดงผลและดาวน์โหลดได้หรือไม่ หากใช้ได้ แสดงว่าเกิดจากส่วนขยายในเบราว์เซอร์ปกติ
+* **ตรวจสอบสิทธิ์การเข้าถึงสื่อ (สำหรับแอปมือถือ):**
+  * เข้าไปที่ **การตั้งค่า (Settings)** > **แอป (Apps)** > เลือกแอปที่กำลังใช้งาน > **สิทธิ์ (Permissions)** > ตรวจสอบว่าอนุญาตให้เข้าถึง **"รูปภาพและวิดีโอ" (Photos and Videos)** หรือ **"ที่จัดเก็บข้อมูล" (Storage)** แล้วหรือยัง
 
-function generateFileQR() {
-  hideFlash();
-  const link = document.getElementById("file_link").value.trim();
-  if (!link) {
-    showFlash("กรุณาวางลิงก์ไฟล์ที่โฮสต์ไว้แล้ว");
-    return;
-  }
-  if (!/^https?:\/\//i.test(link)) {
-    showFlash("ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https://");
-    return;
-  }
-  const fillColor = document.getElementById("fill_color2").value;
-  const backColor = document.getElementById("back_color2").value;
-  const size = parseInt(document.getElementById("box_size2").value, 10) || 280;
+**วิธีดาวน์โหลดภาพสำรอง (สำหรับคอมพิวเตอร์)**
 
-  renderQR(link, fillColor, backColor, size, false);
+1. คลิกขวาตรงจุดที่ควรจะเป็นรูปภาพ แล้วเลือก **Inspect** (ตรวจดู)
+2. ไปที่แท็บ **Network** ด้านบน แล้วเลือกหมวด **Img**
+3. กด `F5` เพื่อรีเฟรชหน้าเว็บ 1 ครั้ง
+4. มองหารายชื่อไฟล์ภาพในช่อง คลิกขวาที่ชื่อไฟล์แล้วเลือก **Open in new tab** (เปิดในแท็บใหม่) จากนั้นสั่งบันทึกรูปภาพจากแท็บนั้นโดยตรง
 
-  lastQrType = "ลิงก์ไฟล์";
-  lastQrValue = link;
-  document.getElementById("result-type").textContent = lastQrType;
-  document.getElementById("result-value").textContent = lastQrValue;
-  document.getElementById("result").classList.add("show");
-  document.getElementById("result").scrollIntoView({ behavior: "smooth" });
-}
-
-function downloadQR() {
-  const canvas = document.querySelector("#qr-render canvas");
-
-  if (!canvas) {
-    showFlash("ไม่พบภาพ QR สำหรับดาวน์โหลด กรุณาสร้าง QR ใหม่อีกครั้ง");
-    return;
-  }
-
-  try {
-    const dataUrl = canvas.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.download = "qrcode.png";
-    link.href = dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (err) {
-    showFlash("เกิดข้อผิดพลาดในการดาวน์โหลดภาพ กรุณาลองใหม่อีกครั้ง");
-  }
-}
-
-function resetForm() {
-  hideResult();
-  hideFlash();
-  document.getElementById("data").value = "";
-  document.getElementById("file_link").value = "";
-  document.getElementById("logo").value = "";
-  currentLogoDataUrl = null;
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-</script>
-</body>
-</html>
+คุณกำลังใช้งานผ่านอุปกรณ์ใด (เช่น คอมพิวเตอร์ Windows/Mac หรือโทรศัพท์ Android/iOS) และใช้ผ่านแอปพลิเคชันหรือเบราว์เซอร์ตัวไหนอยู่ครับ?
